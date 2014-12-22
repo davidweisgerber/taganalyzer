@@ -8,13 +8,9 @@ XMLReader::XMLReader()
 {
 }
 
-void XMLReader::read()
+void XMLReader::read(const QString &filename)
 {
-    m_filename = QFileDialog::getOpenFileName(0, "Select file", QString(), "XML Files *.xml");
-    if (m_filename.isEmpty())
-    {
-        return;
-    }
+    m_filename = filename;
 
     QXmlQuery query;
     query.setFocus(QUrl::fromLocalFile(m_filename));

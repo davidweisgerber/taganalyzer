@@ -1,8 +1,8 @@
 #include <QFile>
+#include <QFileDialog>
 #include <QMessageBox>
-#include "xmlreader.h"
+#include <QSettings>
 #include "mainwindow.h"
-#include "rawreader.h"
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -11,23 +11,73 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    XMLReader reader;
-    reader.read();
+    QCoreApplication::setApplicationName("TagAnalyzer");
+    QCoreApplication::setOrganizationName("David Weisgerber");
 
-    static const int lineLength = 16;
+    QSettings settings;
+    ui->startTimeEdit->setDateTime(settings.value("startDate", QDateTime::currentDateTime()).toDateTime());
 
-    QString formatted;
-    for (int i=lineLength; i < reader.getResult().size(); i+=lineLength)
+    QString xmlFile = settings.value("xmlFile").toString();
+    if (xmlFile.isEmpty() == false)
     {
-        formatted += reader.getResult().mid(i-lineLength, lineLength) + "\n";
+        m_xmlReader.read(xmlFile);
+        m_rawReader.calculate(m_xmlReader.getResult());
+        ui->textEdit->setPlainText(m_rawReader.getResult());
     }
 
+    QString abbottFile = settings.value("abbottFile").toString();
+    if (abbottFile.isEmpty() == false)
+    {
+        m_abbottReader.read(abbottFile);
+        ui->freestyleLibreLineEdit->setText(abbottFile);
+    }
 
-    RawReader rawReader(reader.getResult());
-    rawReader.calculate();
-    ui->textEdit->setPlainText(rawReader.getResult());
+    connect(ui->exportCSVButton, &QAbstractButton::clicked, this, &MainWindow::exportCSV);
+    connect(ui->readXMLFileButton, &QAbstractButton::clicked, this, &MainWindow::selectXMLFile);
+    connect(ui->freestyleLibreFileButton, &QAbstractButton::clicked, this, &MainWindow::selectFreestyLibreFile);
+    connect(ui->startTimeEdit, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::startDateChanged);
 
-    QString csvFile = reader.getFilename() + ".csv";
+    updateGraphics();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::selectXMLFile()
+{
+    QString filename = QFileDialog::getOpenFileName(0, "Select file", QString(), "XML Files *.xml");
+    if (filename.isEmpty())
+    {
+        return;
+    }
+
+    QSettings settings;
+    settings.setValue("xmlFile", filename);
+
+    m_xmlReader.read(filename);
+    m_rawReader.calculate(m_xmlReader.getResult());
+    ui->textEdit->setPlainText(m_rawReader.getResult());
+}
+
+void MainWindow::selectFreestyLibreFile()
+{
+    QString filename = QFileDialog::getOpenFileName(0, "Select file", QString(), "File from Abbott Software *.*");
+    if (filename.isEmpty())
+    {
+        return;
+    }
+
+    QSettings settings;
+    settings.setValue("abbottFile", filename);
+    m_abbottReader.read(filename);
+    ui->freestyleLibreLineEdit->setText(filename);
+}
+
+void MainWindow::exportCSV()
+{
+    QString csvFile = m_xmlReader.getFilename() + ".csv";
     QFile outFile(csvFile);
     if (outFile.open(QIODevice::WriteOnly) == false)
     {
@@ -35,11 +85,19 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-    outFile.write(rawReader.getResultCSV().toUtf8());
+    outFile.write(m_rawReader.getResultCSV().toUtf8());
     outFile.close();
 }
 
-MainWindow::~MainWindow()
+void MainWindow::startDateChanged(const QDateTime &newDate)
 {
-    delete ui;
+    QSettings settings;
+    settings.setValue("startDate", newDate);
+}
+
+void MainWindow::updateGraphics()
+{
+    QMap<QDateTime, int> reference = m_abbottReader.getValues();
+    QMap<QDateTime, int> measurement1 = m_rawReader.getResultCorrected(0, ui->startTimeEdit->dateTime());
+    QMap<QDateTime, int> measurement2 = m_rawReader.getResultCorrected(1, ui->startTimeEdit->dateTime());
 }

@@ -1,6 +1,6 @@
 #include "rawreader.h"
 
-RawReader::RawReader(const QString &data) : m_data(data)
+RawReader::RawReader() : m_data()
   , m_numberOfMinutesRunning(0)
   , m_nextWriteBlock1(0)
   , m_nextWriteBlock2(0)
@@ -8,8 +8,9 @@ RawReader::RawReader(const QString &data) : m_data(data)
 }
 
 
-void RawReader::calculate()
+void RawReader::calculate(const QString &data)
 {
+    m_data = data;
     calculateTimeRunning();
     calculateNextWriteBlocks();
     calculateCurrentValues();
@@ -30,6 +31,30 @@ const QString &RawReader::getResult() const
 const QString &RawReader::getResultCSV() const
 {
     return m_resultCSV;
+}
+
+QMap<QDateTime, int> RawReader::getResultCorrected(int type, const QDateTime &startDate) const
+{
+    QDateTime nowTime = startDate.addSecs(m_numberOfMinutesRunning * 60);
+
+    QMap<QDateTime, int> retValue;
+    foreach (int minutesInPast, m_resultMap.keys())
+    {
+        int value = 0;
+        Record record = m_resultMap[minutesInPast];
+        if (type == 0)
+        {
+            value = record.entry1;
+        }
+        else if (type == 1)
+        {
+            value = record.entry2;
+        }
+
+        retValue.insert(nowTime.addSecs(minutesInPast * -60), value);
+    }
+
+    return retValue;
 }
 
 void RawReader::calculateTimeRunning()

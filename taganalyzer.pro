@@ -15,10 +15,12 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     xmlreader.cpp \
-    rawreader.cpp
+    rawreader.cpp \
+    abbottsoftwarereader.cpp
 
 HEADERS  += mainwindow.h \
     xmlreader.h \
-    rawreader.h
+    rawreader.h \
+    abbottsoftwarereader.h
 
 FORMS    += mainwindow.ui

@@ -8,7 +8,7 @@ class XMLReader
 public:
     XMLReader();
 
-    void read();
+    void read(const QString &filename);
     const QString &getResult();
     const QString &getFilename();
 

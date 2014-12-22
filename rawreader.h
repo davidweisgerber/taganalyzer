@@ -3,14 +3,16 @@
 
 #include <QString>
 #include <QMap>
+#include <QDateTime>
 
 class RawReader
 {
 public:
-    RawReader(const QString &data);
-    void calculate();
+    RawReader();
+    void calculate(const QString &data);
     const QString &getResult() const;
     const QString &getResultCSV() const;
+    QMap<QDateTime, int> getResultCorrected(int type, const QDateTime &startDate) const;
 
 private:
     class Record {
