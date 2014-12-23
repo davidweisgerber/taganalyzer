@@ -9,16 +9,17 @@ class RawReader
 {
 public:
     RawReader();
-    void calculate(const QString &data);
+    void calculate(const QString &data, const QDateTime &startDate);
     const QString &getResult() const;
     const QString &getResultCSV() const;
-    QMap<QDateTime, int> getResultCorrected(int type, const QDateTime &startDate) const;
+    QMap<QDateTime, int> getResultCorrected(int type) const;
 
 private:
     class Record {
     public:
         int entry1;
         int entry2;
+        int entry3;
     };
 
     void calculateTimeRunning();
@@ -35,6 +36,7 @@ private:
     QString m_result;
     QString m_resultCSV;
     QMap<int, Record> m_resultMap;
+    QDateTime m_startDate;
 };
 
 #endif // RAWREADER_H

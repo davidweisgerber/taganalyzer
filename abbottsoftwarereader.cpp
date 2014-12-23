@@ -38,7 +38,7 @@ bool AbbottSoftwareReader::read(const QString &filename)
 
         QDateTime date = QDateTime::fromString(parts[1], "yyyy.MM.dd HH:mm");
 
-        if (parts[2] != "0" && parts[2] != "1")
+        if (parts[2] != "0")
         {
             line = file.readLine();
             continue;

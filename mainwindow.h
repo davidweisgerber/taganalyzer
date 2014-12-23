@@ -10,6 +10,9 @@ namespace Ui {
 class MainWindow;
 }
 
+class QGraphicsView;
+class LineChart;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -24,12 +27,15 @@ private slots:
     void exportCSV();
     void startDateChanged(const QDateTime &newDate);
     void updateGraphics();
+    void saveGraph();
 
 private:
     Ui::MainWindow *ui;
     XMLReader m_xmlReader;
     RawReader m_rawReader;
     AbbottSoftwareReader m_abbottReader;
+    QGraphicsView *m_graphicsView;
+    LineChart *m_lineChart;
 };
 
 #endif // MAINWINDOW_H

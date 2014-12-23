@@ -2,6 +2,9 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include "linechart.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -21,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if (xmlFile.isEmpty() == false)
     {
         m_xmlReader.read(xmlFile);
-        m_rawReader.calculate(m_xmlReader.getResult());
+        m_rawReader.calculate(m_xmlReader.getResult(), ui->startTimeEdit->dateTime());
         ui->textEdit->setPlainText(m_rawReader.getResult());
     }
 
@@ -36,7 +39,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->readXMLFileButton, &QAbstractButton::clicked, this, &MainWindow::selectXMLFile);
     connect(ui->freestyleLibreFileButton, &QAbstractButton::clicked, this, &MainWindow::selectFreestyLibreFile);
     connect(ui->startTimeEdit, &QDateTimeEdit::dateTimeChanged, this, &MainWindow::startDateChanged);
+    connect(ui->saveGraphButton, &QAbstractButton::clicked, this, &MainWindow::saveGraph);
 
+    m_graphicsView = new QGraphicsView();
+    m_graphicsView->setGeometry(0, 0, 1024, 1024);
+    m_graphicsView->setScene(new QGraphicsScene());
+    m_lineChart = new LineChart(m_graphicsView->geometry());
+    m_graphicsView->scene()->addItem(m_lineChart);
+    m_graphicsView->show();
     updateGraphics();
 }
 
@@ -57,8 +67,9 @@ void MainWindow::selectXMLFile()
     settings.setValue("xmlFile", filename);
 
     m_xmlReader.read(filename);
-    m_rawReader.calculate(m_xmlReader.getResult());
+    m_rawReader.calculate(m_xmlReader.getResult(), ui->startTimeEdit->dateTime());
     ui->textEdit->setPlainText(m_rawReader.getResult());
+    updateGraphics();
 }
 
 void MainWindow::selectFreestyLibreFile()
@@ -73,6 +84,7 @@ void MainWindow::selectFreestyLibreFile()
     settings.setValue("abbottFile", filename);
     m_abbottReader.read(filename);
     ui->freestyleLibreLineEdit->setText(filename);
+    updateGraphics();
 }
 
 void MainWindow::exportCSV()
@@ -93,11 +105,33 @@ void MainWindow::startDateChanged(const QDateTime &newDate)
 {
     QSettings settings;
     settings.setValue("startDate", newDate);
+    updateGraphics();
 }
 
 void MainWindow::updateGraphics()
 {
     QMap<QDateTime, int> reference = m_abbottReader.getValues();
-    QMap<QDateTime, int> measurement1 = m_rawReader.getResultCorrected(0, ui->startTimeEdit->dateTime());
-    QMap<QDateTime, int> measurement2 = m_rawReader.getResultCorrected(1, ui->startTimeEdit->dateTime());
+    QMap<QDateTime, int> measurement1 = m_rawReader.getResultCorrected(0);
+    QMap<QDateTime, int> measurement2 = m_rawReader.getResultCorrected(1);
+
+    m_lineChart->setReference(reference);
+    m_lineChart->clear();
+    m_lineChart->addValue(measurement1);
+    m_lineChart->addValue(measurement2);
+    m_lineChart->setResult(m_rawReader.getResultCorrected(2));
+}
+
+void MainWindow::saveGraph()
+{
+    QString filename = QFileDialog::getSaveFileName(0, "Select location to save PNG", QString(), "PNG Image *.png");
+    if (filename.isEmpty())
+    {
+        return;
+    }
+
+    QImage img(m_graphicsView->height(), m_graphicsView->width(), QImage::Format_ARGB32_Premultiplied);
+    QPainter p(&img);
+    m_graphicsView->scene()->render(&p);
+    p.end();
+    img.save(filename);
 }

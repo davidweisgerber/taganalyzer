@@ -16,11 +16,13 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     xmlreader.cpp \
     rawreader.cpp \
-    abbottsoftwarereader.cpp
+    abbottsoftwarereader.cpp \
+    linechart.cpp
 
 HEADERS  += mainwindow.h \
     xmlreader.h \
     rawreader.h \
-    abbottsoftwarereader.h
+    abbottsoftwarereader.h \
+    linechart.h
 
 FORMS    += mainwindow.ui

@@ -8,8 +8,12 @@ RawReader::RawReader() : m_data()
 }
 
 
-void RawReader::calculate(const QString &data)
+void RawReader::calculate(const QString &data, const QDateTime &startDate)
 {
+    m_startDate = startDate;
+    m_result.clear();
+    m_resultCSV.clear();
+    m_resultMap.clear();
     m_data = data;
     calculateTimeRunning();
     calculateNextWriteBlocks();
@@ -33,9 +37,9 @@ const QString &RawReader::getResultCSV() const
     return m_resultCSV;
 }
 
-QMap<QDateTime, int> RawReader::getResultCorrected(int type, const QDateTime &startDate) const
+QMap<QDateTime, int> RawReader::getResultCorrected(int type) const
 {
-    QDateTime nowTime = startDate.addSecs(m_numberOfMinutesRunning * 60);
+    QDateTime nowTime = m_startDate.addSecs(m_numberOfMinutesRunning * 60);
 
     QMap<QDateTime, int> retValue;
     foreach (int minutesInPast, m_resultMap.keys())
@@ -50,8 +54,17 @@ QMap<QDateTime, int> RawReader::getResultCorrected(int type, const QDateTime &st
         {
             value = record.entry2;
         }
+        else if (type == 2)
+        {
+            value = record.entry3;
+        }
 
-        retValue.insert(nowTime.addSecs(minutesInPast * -60), value);
+        if (value == 0)
+        {
+            continue;
+        }
+
+        retValue.insert(nowTime.addSecs(minutesInPast * -60), value );
     }
 
     return retValue;
@@ -113,6 +126,7 @@ void RawReader::calculateCurrentValues()
 
 void RawReader::calculateHistoricValues()
 {
+    QDateTime nowTime = m_startDate.addSecs(m_numberOfMinutesRunning * 60);
     int lineNumber = 0;
     for (int i=56 + (16 * 6 * 2); i < (48 * 6 * 2) + 56; i+=12)
     {
@@ -136,7 +150,7 @@ void RawReader::calculateHistoricValues()
             m_nextWriteBlock2 += 32;
         }
 
-        m_result += QString("\t\t%1 %2\n").arg(value.entry1).arg(value.entry2);
+        m_result += QString("\t\t%1 %2 %4\t%3\n").arg(value.entry1).arg(value.entry2).arg(nowTime.addSecs(-60 * time).toString()).arg(value.entry3);
 
         if (time != 0)
         {
@@ -156,6 +170,9 @@ RawReader::Record RawReader::recordToLong(const QString &record)
     recordData.entry2 = record.mid(4, 2).toLongLong(0, 16) << 16;
     recordData.entry2 += record.mid(2, 2).toLongLong(0, 16) << 8;
     recordData.entry2 += record.mid(0, 2).toLongLong(0, 16);
+    recordData.entry3 = record.mid(0, 2).toLongLong(0, 16);
+    recordData.entry3 += record.mid(3, 1).toLongLong(0, 16) << 8;
+    recordData.entry3 = (recordData.entry3 / 6) - 37;
 
     return recordData;
 }
